@@ -12,20 +12,37 @@ module FileUploadCache
         end
 
         alias_method_chain :"#{field}=", :cache
-
-        before_validation lambda { 
+        
+        before_validation lambda {
           original = self.instance_variable_get("@#{field}_original")
           original.rewind if original && original.respond_to?(:rewind)
-
-          self.send("cached_#{field}=", CachedFile.store(original)) if original.respond_to?(:read)
+          
+          # set file var from cache if cache id exists and original is blank (in before_validation, in case file is required)
           if( ! self.send("#{field}_cache_id").blank? && original.blank? )
-            cached_file = CachedFile.find(self.send("#{field}_cache_id"))
-            if cached_file
-              FileUploadCache::Tempfile.for(cached_file.read, cached_file.original_filename) do |tf|
-                self.send("#{field}=", tf)
-                self.send("cached_#{field}=", cached_file)
-              end
+            if cached_file = CachedFile.find(self.send("#{field}_cache_id"))
+              tf = FileUploadCache::Tempfile.for(cached_file.read, cached_file.original_filename)
+              self.send("#{field}=", tf)
+              self.send("cached_#{field}=", cached_file)
             end
+          end
+        }
+
+        after_validation lambda {
+          original = self.instance_variable_get("@#{field}_original")
+          original.rewind if original && original.respond_to?(:rewind)
+          
+          # set cached file if there are errors
+          if self.errors.present?
+            if self.send("cached_#{field}").blank? && original.respond_to?(:read)
+              cached_file = CachedFile.store(original)
+              self.send("cached_#{field}=", cached_file)
+              self.send("#{field}_cache_id=", cached_file.id)
+            end
+          # otherwise delete cached file is no longer needed
+          elsif self.send("#{field}_cache_id").present? && cached_file = CachedFile.find(self.send("#{field}_cache_id"))
+            CachedFile.delete(self.send("#{field}_cache_id"))
+            self.send("cached_#{field}=", nil)
+            self.send("#{field}_cache_id=", nil)
           end
         }
       end

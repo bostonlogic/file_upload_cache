@@ -23,6 +23,10 @@ module FileUploadCache
     def self.find(id)
       FileUploadCache.file_cache.read("FileUploadCache::#{id}")
     end
+    
+    def self.delete(id)
+      FileUploadCache.file_cache.delete("FileUploadCache::#{id}")
+    end
 
   end
 
