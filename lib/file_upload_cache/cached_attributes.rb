@@ -4,7 +4,7 @@ module FileUploadCache
 
     module ClassMethods
 
-      def cached_file_for(field)
+      def cached_file_for(field, options={})
         attr_accessor :"#{field}_cache_id", :"cached_#{field}"
         define_method "#{field}_with_cache=" do |value|
           instance_variable_set("@#{field}_original", value)
@@ -37,6 +37,19 @@ module FileUploadCache
               cached_file = CachedFile.store(original)
               self.send("cached_#{field}=", cached_file)
               self.send("#{field}_cache_id=", cached_file.id)
+            end
+            if options[:nested_children]
+              options[:nested_children].each{|assoc, assoc_field|
+                self.send(assoc).each{|child_record|
+                  if child_record.new_record?
+                    original_child = child_record.instance_variable_get("@#{assoc_field}_original")
+                    original_child.rewind if original_child && original_child.respond_to?(:rewind)
+                    child_cached_file = CachedFile.store(original_child)
+                    child_record.send("cached_#{assoc_field}=", child_cached_file)
+                    child_record.send("#{assoc_field}_cache_id=", child_cached_file.id)
+                  end
+                }
+              }
             end
           # otherwise delete cached file is no longer needed
           elsif self.send("#{field}_cache_id").present? && cached_file = CachedFile.find(self.send("#{field}_cache_id"))
