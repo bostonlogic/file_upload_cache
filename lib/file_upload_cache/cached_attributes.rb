@@ -43,10 +43,12 @@ module FileUploadCache
                 self.send(assoc).each{|child_record|
                   if child_record.new_record?
                     original_child = child_record.instance_variable_get("@#{assoc_field}_original")
-                    original_child.rewind if original_child && original_child.respond_to?(:rewind)
-                    child_cached_file = CachedFile.store(original_child)
-                    child_record.send("cached_#{assoc_field}=", child_cached_file)
-                    child_record.send("#{assoc_field}_cache_id=", child_cached_file.id)
+                    if original_child && original_child.respond_to?(:read)
+                      original_child.rewind if original_child.respond_to?(:rewind)
+                      child_cached_file = CachedFile.store(original_child)
+                      child_record.send("cached_#{assoc_field}=", child_cached_file)
+                      child_record.send("#{assoc_field}_cache_id=", child_cached_file.id)
+                    end
                   end
                 }
               }
