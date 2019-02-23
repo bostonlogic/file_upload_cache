@@ -11,7 +11,8 @@ module FileUploadCache
           self.send("#{field}_without_cache=", value)
         end
 
-        alias_method_chain :"#{field}=", :cache
+        alias_method :"#{field}_without_cache=", :"#{field}="
+        alias_method :"#{field}=", :"#{field}_with_cache="
         
         before_validation lambda {
           original = self.instance_variable_get("@#{field}_original")
