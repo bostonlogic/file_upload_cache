@@ -1,6 +1,6 @@
 module FileUploadCache
   class CachedFilesController < ActionController::Base
-    before_filter :require_current_cached_file, :only => :show
+    before_action :require_current_cached_file, :only => :show
 
     def show
       options = {:disposition => 'inline'}
