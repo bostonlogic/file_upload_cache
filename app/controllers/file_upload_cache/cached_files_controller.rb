@@ -1,5 +1,5 @@
 module FileUploadCache
-  class CachedFilesController < ActionController::Base
+  class CachedFilesController < ApplicationController
     before_action :require_current_cached_file, :only => :show
 
     def show
