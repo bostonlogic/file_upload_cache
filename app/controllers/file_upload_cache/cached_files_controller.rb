@@ -15,7 +15,7 @@ module FileUploadCache
     end
 
     def require_current_cached_file
-      render :text => 'not found', :status => :not_found unless current_cached_file
+      render :plain => 'not found', :status => :not_found unless current_cached_file
     end
   end
 end
